@@ -1,0 +1,453 @@
+<!DOCTYPE html> <html lang="zh-TW"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📱 專業版庫存盤點 App</title> <style> /* CSS 樣式美化區塊開始 */
+        
+        /* 基礎與 App 介面設定 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f4f7f6; 
+            padding-bottom: 80px; /* 底部留白，避免商品被按鈕擋住 */
+        }
+        
+        /* 頂部標題列的設計 */
+        .header { 
+            background-color: #3f51b5; color: white; padding: 15px; 
+            text-align: center; font-size: 18px; font-weight: bold; 
+            position: sticky; top: 0; z-index: 100; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        
+        /* 分類導覽列 (可左右滑動的分類標籤) */
+        .category-nav { 
+            display: flex; overflow-x: auto; background: white; 
+            padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            white-space: nowrap; 
+        }
+        
+        /* 單一個分類按鈕的設計 */
+        .category-btn { 
+            padding: 8px 15px; background: #eee; border: none; 
+            border-radius: 20px; margin-right: 10px; font-size: 14px; cursor: pointer; 
+        }
+        
+        /* 當某個分類被「選中」時的樣式變化 */
+        .category-btn.active { 
+            background: #3f51b5; color: white; 
+        }
+
+        /* 🆕 新增：分類管理操作區塊 (修改/刪除分類) */
+        .category-actions {
+            display: flex; /* 橫向排版 */
+            justify-content: flex-end; /* 讓按鈕靠右對齊 */
+            padding: 10px 15px 0 15px; /* 上右下左的內側留白 */
+        }
+
+        .category-actions button {
+            background: none; /* 移除背景顏色 */
+            border: 1px solid #ccc; /* 加上淺灰色邊框 */
+            padding: 5px 10px; /* 內側留白 */
+            border-radius: 5px; /* 圓角 */
+            margin-left: 10px; /* 按鈕之間的距離 */
+            font-size: 13px; /* 字體大小 */
+            color: #555; /* 字體顏色 */
+            cursor: pointer; /* 游標變手指 */
+        }
+
+        .category-actions button:hover {
+            background: #eee; /* 滑鼠移過去時背景稍微變灰 */
+        }
+        
+        /* 內容區與卡片設計 */
+        .content { 
+            padding: 15px; 
+        }
+        
+        /* 單一張商品卡片的外觀設計 */
+        .item-card { 
+            background: white; border-radius: 10px; padding: 15px; 
+            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
+        
+        /* 卡片上半部 (包含商品名稱輸入框和刪除按鈕) */
+        .item-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; 
+        }
+        
+        /* 商品名稱輸入框的美化 */
+        .item-header input[type="text"] { 
+            font-size: 16px; font-weight: bold; border: 1px solid #ccc; 
+            padding: 5px; border-radius: 5px; width: 60%; 
+        }
+        
+        /* 刪除按鈕的設計 */
+        .del-btn { 
+            background-color: #ff4d4f; color: white; border: none; 
+            padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; 
+        }
+
+        /* 數字操作區：每一列(如期初、賣出)的排版 */
+        .row-group { 
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; 
+        }
+        
+        /* 數字區的標籤文字 */
+        .row-group label { 
+            font-size: 14px; color: #555; width: 30%; 
+        }
+        
+        /* 包含 -按鈕、數字輸入框、+按鈕的群組 */
+        .number-control { 
+            display: flex; align-items: center; width: 60%; justify-content: space-between; 
+        }
+        
+        /* + 和 - 的按鈕設計 */
+        .number-control button { 
+            width: 30px; height: 30px; font-size: 18px; 
+            background: #e0e0e0; border: none; border-radius: 5px; cursor: pointer; 
+        }
+        
+        /* 數字輸入框的設計 */
+        .number-control input { 
+            width: 40px; text-align: center; font-size: 16px; 
+            border: 1px solid #ccc; padding: 5px; border-radius: 5px; 
+        }
+
+        /* 最下方的「實際庫存結算」區塊設計 */
+        .result-group { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #e8eaf6; padding: 10px; border-radius: 5px; margin-top: 10px; 
+        }
+        
+        /* 結算區塊裡的文字設計 */
+        .result-group span { 
+            font-size: 14px; color: #3f51b5; font-weight: bold; 
+        }
+        
+        /* 實際算出來的那個庫存數字特別設計 */
+        .real-stock { 
+            font-size: 20px !important; color: #d32f2f !important; 
+        }
+
+        /* 底部操作列 (新增與結算按鈕) */
+        .bottom-bar { 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: white; 
+            display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); 
+        }
+        
+        /* 底部操作列裡的按鈕設計 */
+        .bottom-bar button { 
+            flex: 1; padding: 15px; font-size: 16px; border: none; 
+            font-weight: bold; cursor: pointer; border-right: 1px solid #eee; 
+        }
+        
+        .btn-add { background-color: #2196F3; color: white; }
+        .btn-reset { background-color: #ff9800; color: white; }
+        
+        /* 當沒有商品時顯示的提示文字美化 */
+        .empty-msg { text-align: center; color: #999; margin-top: 30px; }
+    </style> /* CSS 樣式美化區塊結束 */
+</head>
+<body> <div class="header">
+        <span>📦 庫存盤點 App</span>
+        <button onclick="addCategory()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⊕</button>
+    </div>
+
+    <div class="category-nav" id="categoryNav"></div>
+
+    <div class="category-actions" id="categoryActions"></div>
+
+    <div class="content" id="inventoryList"></div>
+
+    <div class="bottom-bar">
+        <button class="btn-add" onclick="addNewItem()">➕ 新增品項</button>
+        <button class="btn-reset" onclick="monthlyReset()">📅 月底結算</button>
+    </div>
+
+<script> /* JavaScript 程式邏輯區塊開始 */
+
+    // 儲存整個 App 商品資料庫的物件
+    let appData = {}; 
+    // 記錄目前正在看哪一個分類（例如："鑰匙圈"）
+    let currentCategory = ""; 
+
+    // 網頁載入完成時，執行 loadData 讀取資料
+    window.onload = function() {
+        loadData();
+    };
+
+    // --- 資料存取功能 ---
+    function loadData() {
+        const savedData = localStorage.getItem('myInventoryData');
+        
+        if (savedData) {
+            // 將存好的資料轉換回 JavaScript 物件格式
+            appData = JSON.parse(savedData);
+        } else {
+            // 如果沒資料，給它一點預設資料做範例
+            appData = {
+                "鑰匙圈": [
+                    { id: Date.now(), name: "胸膛愛❤️", initial: 3, sell: 1, restock: 0 }
+                ],
+                "明信片": [] 
+            };
+        }
+        
+        const categories = Object.keys(appData);
+        if (categories.length > 0) {
+            // 預設切換到第一個分類
+            currentCategory = categories[0];
+        }
+        
+        // 呼叫這三個函數來繪製畫面
+        renderCategories();
+        renderCategoryActions(); // 🆕 繪製修改/刪除分類的按鈕
+        renderCards();
+    }
+
+    // 將資料存入瀏覽器的函數
+    function saveData() {
+        localStorage.setItem('myInventoryData', JSON.stringify(appData));
+    }
+
+    // --- 分類操作功能 ---
+    
+    // 繪製「分類導覽列」的函數
+    function renderCategories() {
+        const nav = document.getElementById('categoryNav');
+        nav.innerHTML = ''; // 清空舊按鈕
+        
+        const categories = Object.keys(appData);
+        
+        categories.forEach(cat => {
+            const btn = document.createElement('button');
+            // 如果是目前的分類，加上 'active' 樣式變色
+            btn.className = `category-btn ${cat === currentCategory ? 'active' : ''}`;
+            btn.textContent = cat;
+            
+            btn.onclick = () => {
+                currentCategory = cat; // 更新目前分類
+                renderCategories(); 
+                renderCategoryActions(); // 🆕 切換分類時也要更新管理按鈕
+                renderCards(); 
+            };
+            
+            nav.appendChild(btn);
+        });
+    }
+
+    // 新增分類的函數
+    function addCategory() {
+        const newCat = prompt("請輸入新分類名稱（例如：地墊、無框畫）：");
+        if (newCat && newCat.trim() !== "") {
+            if (!appData[newCat]) {
+                appData[newCat] = []; // 建立空陣列
+                currentCategory = newCat; // 切換過去
+                saveData(); 
+                renderCategories(); 
+                renderCategoryActions(); // 🆕 更新按鈕
+                renderCards(); 
+            } else {
+                alert("這個分類已經存在囉！");
+            }
+        }
+    }
+
+    // 🆕 新增：繪製「分類管理按鈕」的函數
+    function renderCategoryActions() {
+        const actionContainer = document.getElementById('categoryActions');
+        // 如果目前沒有分類，就隱藏這個區塊
+        if (!currentCategory) {
+            actionContainer.style.display = 'none';
+            return;
+        }
+
+        // 如果有分類，顯示這個區塊，並放入兩個按鈕
+        actionContainer.style.display = 'flex';
+        actionContainer.innerHTML = `
+            <button onclick="renameCategory()">✏️ 修改名稱</button>
+            <button onclick="deleteCategory()">❌ 刪除分類</button>
+        `;
+    }
+
+    // 🆕 新增：修改分類名稱的邏輯函數
+    function renameCategory() {
+        if (!currentCategory) return; // 如果沒選分類就終止
+        
+        // 跳出輸入框，並把原本的名稱當作預設值帶入
+        const newCatName = prompt("請輸入新的分類名稱：", currentCategory);
+        
+        // 確保使用者有輸入，且新名稱跟舊名稱不一樣
+        if (newCatName && newCatName.trim() !== "" && newCatName !== currentCategory) {
+            // 檢查新名稱是否已經跟別的分類撞名了
+            if (appData[newCatName]) {
+                alert("這個分類名稱已經存在囉！");
+                return;
+            }
+            
+            // 【重要邏輯：幫資料搬家】
+            // 1. 把舊分類裡的所有商品資料，複製一份給新分類
+            appData[newCatName] = appData[currentCategory];
+            // 2. 把舊的分類直接從資料庫中刪除
+            delete appData[currentCategory];
+            
+            // 3. 告訴系統現在我們正在看這個新分類
+            currentCategory = newCatName;
+            
+            saveData(); // 存檔
+            renderCategories(); // 畫面重整
+            renderCategoryActions();
+            renderCards();
+        }
+    }
+
+    // 🆕 新增：刪除整個分類的邏輯函數
+    function deleteCategory() {
+        if (!currentCategory) return; // 如果沒選分類就終止
+        
+        // 嚴重的刪除動作，必須跳出警告視窗防呆
+        if (confirm(`⚠️ 確定要刪除「${currentCategory}」這個分類嗎？\n\n注意：裡面的所有商品都會一起消失，無法復原喔！`)) {
+            
+            // 將這個分類從資料庫中徹底刪除
+            delete appData[currentCategory];
+            
+            // 刪除後，系統要決定畫面要跳去哪裡
+            const remainingCategories = Object.keys(appData);
+            if (remainingCategories.length > 0) {
+                // 如果還有其他分類，就跳到第一個
+                currentCategory = remainingCategories[0];
+            } else {
+                // 如果分類全被刪光了，就變為空值
+                currentCategory = "";
+            }
+            
+            saveData(); // 存檔
+            renderCategories(); // 畫面重整
+            renderCategoryActions();
+            renderCards();
+        }
+    }
+
+    // --- 商品卡片操作功能 ---
+    
+    // 繪製「商品卡片」的函數
+    function renderCards() {
+        const listContainer = document.getElementById('inventoryList');
+        listContainer.innerHTML = '';
+
+        if (!currentCategory || !appData[currentCategory] || appData[currentCategory].length === 0) {
+            listContainer.innerHTML = '<div class="empty-msg">這裡目前沒有商品喔！點擊下方「新增品項」來建立吧。</div>';
+            return; 
+        }
+
+        const items = appData[currentCategory];
+
+        items.forEach((item, index) => {
+            const realStock = (parseInt(item.initial) || 0) - (parseInt(item.sell) || 0) + (parseInt(item.restock) || 0);
+
+            const card = document.createElement('div');
+            card.className = 'item-card';
+
+            card.innerHTML = `
+                <div class="item-header">
+                    <input type="text" value="${item.name}" placeholder="輸入商品名稱" onchange="updateItem(${index}, 'name', this.value)">
+                    <button class="del-btn" onclick="deleteItem(${index})">刪除</button>
+                </div>
+                <div class="row-group">
+                    <label>期初庫存</label>
+                    <div class="number-control">
+                        <button onclick="changeNumber(${index}, 'initial', -1)">-</button>
+                        <input type="number" value="${item.initial}" onchange="updateItem(${index}, 'initial', this.value)">
+                        <button onclick="changeNumber(${index}, 'initial', 1)">+</button>
+                    </div>
+                </div>
+                <div class="row-group">
+                    <label>當月賣出</label>
+                    <div class="number-control">
+                        <button onclick="changeNumber(${index}, 'sell', -1)">-</button>
+                        <input type="number" value="${item.sell}" onchange="updateItem(${index}, 'sell', this.value)">
+                        <button onclick="changeNumber(${index}, 'sell', 1)">+</button>
+                    </div>
+                </div>
+                <div class="row-group">
+                    <label>當月進貨</label>
+                    <div class="number-control">
+                        <button onclick="changeNumber(${index}, 'restock', -1)">-</button>
+                        <input type="number" value="${item.restock}" onchange="updateItem(${index}, 'restock', this.value)">
+                        <button onclick="changeNumber(${index}, 'restock', 1)">+</button>
+                    </div>
+                </div>
+                <div class="result-group">
+                    <span>⚡ 實際庫存結算</span>
+                    <span class="real-stock">${realStock}</span>
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+
+    // 更新單一商品資料的函數 
+    function updateItem(index, field, value) {
+        if (field !== 'name') {
+            value = parseInt(value) || 0; 
+        }
+        appData[currentCategory][index][field] = value;
+        saveData(); 
+        renderCards(); 
+    }
+
+    // 處理 + 和 - 按鈕點擊的函數
+    function changeNumber(index, field, amount) {
+        let currentVal = parseInt(appData[currentCategory][index][field]) || 0;
+        let newVal = currentVal + amount;
+        if (newVal < 0) newVal = 0; 
+        updateItem(index, field, newVal);
+    }
+
+    // 新增一筆空白商品的函數
+    function addNewItem() {
+        if (!currentCategory) {
+            alert("請先建立一個分類！");
+            return;
+        }
+        appData[currentCategory].push({
+            id: Date.now(), 
+            name: "", 
+            initial: 0, 
+            sell: 0,
+            restock: 0
+        });
+        saveData(); 
+        renderCards(); 
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    // 刪除商品的函數
+    function deleteItem(index) {
+        if (confirm("確定要刪除這個商品嗎？")) {
+            appData[currentCategory].splice(index, 1);
+            saveData(); 
+            renderCards(); 
+        }
+    }
+
+    // --- 月底結算功能 ---
+    function monthlyReset() {
+        if (confirm("⚠️ 確定要進行月底結算嗎？\n\n系統會自動將目前的「實際庫存」變成下個月的「期初庫存」，並把賣出與進貨數量歸零喔！")) {
+            for (let cat in appData) {
+                appData[cat].forEach(item => {
+                    const realStock = (parseInt(item.initial) || 0) - (parseInt(item.sell) || 0) + (parseInt(item.restock) || 0);
+                    item.initial = realStock;
+                    item.sell = 0;
+                    item.restock = 0;
+                });
+            }
+            saveData(); 
+            renderCards(); 
+            alert("🎉 結算完成！準備迎接新的一個月！"); 
+        }
+    }
+</script> </body> 
+</html>
