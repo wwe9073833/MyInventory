@@ -153,8 +153,15 @@
 </head>
 <body> <div class="header">
         <span>📦 庫存盤點 App</span>
-        <button onclick="addCategory()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⊕</button>
+        <div>
+            <button onclick="exportData()" style="background:none; border:none; color:white; font-size:16px; cursor:pointer;" title="匯出備份">📤</button>
+            <button onclick="document.getElementById('importInput').click()" style="background:none; border:none; color:white; font-size:16px; cursor:pointer; margin-right:10px;" title="匯入備份">📥</button>
+            
+            <button onclick="addCategory()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">⊕</button>
+        </div>
     </div>
+    
+    <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importData(event)">
 
     <div class="category-nav" id="categoryNav"></div>
 
