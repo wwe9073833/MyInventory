@@ -457,5 +457,60 @@
             alert("🎉 結算完成！準備迎接新的一個月！"); 
         }
     }
+    // --- 🆕 備份與還原功能 ---
+    
+    // 匯出資料的函數 (點擊 📤 時觸發)
+    function exportData() {
+        // 將目前的資料庫轉換成文字
+        const dataStr = JSON.stringify(appData, null, 2);
+        // 建立一個文字檔案
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        // 建立一個隱藏的下載連結並自動點擊
+        const link = document.createElement("a");
+        link.href = url;
+        // 幫檔案取名為 inventory_backup.json
+        link.download = "inventory_backup.json"; 
+        link.click();
+    }
+
+    // 匯入資料的函數 (點擊 📥 選完檔案後觸發)
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                // 嘗試將檔案內容讀取並轉換回資料庫格式
+                const importedData = JSON.parse(e.target.result);
+                
+                if (confirm("⚠️ 警告：匯入備份將會覆蓋掉目前所有的資料喔！確定要匯入嗎？")) {
+                    appData = importedData; // 覆蓋目前資料
+                    
+                    // 重設預設分類
+                    const categories = Object.keys(appData);
+                    if (categories.length > 0) {
+                        currentCategory = categories[0];
+                    } else {
+                        currentCategory = "";
+                    }
+                    
+                    saveData(); // 存進保險箱
+                    renderCategories(); // 畫面重整
+                    renderCategoryActions();
+                    renderCards();
+                    alert("🎉 備份資料匯入成功！");
+                }
+            } catch (error) {
+                alert("❌ 匯入失敗！這似乎不是正確的備份檔案格式。");
+            }
+        };
+        reader.readAsText(file);
+        
+        // 清空選擇器，讓下次可以選同一個檔案
+        event.target.value = ""; 
+    }
 </script> </body> 
 </html>
