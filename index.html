@@ -23,12 +23,10 @@
         .category-btn { padding: 8px 15px; background: #eee; border: none; border-radius: 20px; margin-right: 10px; font-size: 14px; cursor: pointer; }
         .category-btn.active { background: #3f51b5; color: white; }
 
-        /* 分類管理操作區塊：稍微調整讓三個按鈕放得下，且可換行 */
         .category-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; padding: 10px 15px 0 15px; gap: 8px; }
         .category-actions button { background: none; border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; font-size: 13px; color: #555; cursor: pointer; }
         .category-actions button:hover { background: #eee; }
         
-        /* 統一定價按鈕專屬樣式（紅色醒目） */
         .btn-bulk-price { color: #d32f2f !important; border-color: #ffcdd2 !important; background-color: #ffebee !important; font-weight: bold; }
         .btn-bulk-price:active { transform: scale(0.95); }
 
@@ -71,7 +69,7 @@
         .btn-add { background-color: #2196F3; color: white; }
         .btn-reset { background-color: #ff9800; color: white; }
         
-        .empty-msg { text-align: center; color: #999; margin-top: 30px; }
+        .empty-msg { text-align: center; color: #999; margin-top: 30px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -99,35 +97,49 @@
 <script> /* ================= JavaScript 程式邏輯區塊 ================= */
 
     let appData = {}; 
+    let historyData = []; // 🆕 準備一個專屬陣列，用來裝歷史紀錄
     let currentCategory = "總覽"; 
 
     window.onload = function() { loadData(); };
 
     function loadData() {
+        // 讀取商品資料庫
         const savedData = localStorage.getItem('myInventoryData');
-        if (savedData) {
-            appData = JSON.parse(savedData);
-        } else {
-            appData = {
-                "鑰匙圈": [{ id: Date.now(), name: "胸膛愛❤️", initial: 3, sell: 1, restock: 0, price: 150 }],
-                "明信片": [] 
-            };
+        if (savedData) { appData = JSON.parse(savedData); } 
+        else {
+            appData = { "鑰匙圈": [{ id: Date.now(), name: "胸膛愛❤️", initial: 3, sell: 1, restock: 0, price: 150 }] };
         }
+        
+        // 🆕 讀取歷史戰績資料庫
+        const savedHistory = localStorage.getItem('myInventoryHistory');
+        if (savedHistory) { historyData = JSON.parse(savedHistory); }
+
         renderCategories(); renderCategoryActions(); renderCards();
     }
 
     function saveData() { localStorage.setItem('myInventoryData', JSON.stringify(appData)); }
+    // 🆕 儲存歷史戰績到瀏覽器
+    function saveHistory() { localStorage.setItem('myInventoryHistory', JSON.stringify(historyData)); }
 
     function renderCategories() {
         const nav = document.getElementById('categoryNav');
         nav.innerHTML = ''; 
         
+        // 總覽按鈕
         const overviewBtn = document.createElement('button');
         overviewBtn.className = `category-btn ${currentCategory === '總覽' ? 'active' : ''}`;
         overviewBtn.textContent = '📊 總覽';
         overviewBtn.onclick = () => { switchCategory('總覽'); };
         nav.appendChild(overviewBtn);
 
+        // 🆕 歷史紀錄按鈕
+        const historyBtn = document.createElement('button');
+        historyBtn.className = `category-btn ${currentCategory === '歷史紀錄' ? 'active' : ''}`;
+        historyBtn.textContent = '📜 歷史紀錄';
+        historyBtn.onclick = () => { switchCategory('歷史紀錄'); };
+        nav.appendChild(historyBtn);
+
+        // 實際商品分類按鈕
         const categories = Object.keys(appData);
         categories.forEach(cat => {
             const btn = document.createElement('button');
@@ -152,13 +164,14 @@
         }
     }
 
-    // --- 繪製分類管理區塊 ---
     function renderCategoryActions() {
         const actionContainer = document.getElementById('categoryActions');
-        if (!currentCategory || currentCategory === '總覽') { actionContainer.style.display = 'none'; return; }
+        // 🆕 在「總覽」與「歷史紀錄」隱藏管理按鈕
+        if (!currentCategory || currentCategory === '總覽' || currentCategory === '歷史紀錄') { 
+            actionContainer.style.display = 'none'; return; 
+        }
         
         actionContainer.style.display = 'flex';
-        // 🆕 新增了一顆紅色的「💰 統一定價」按鈕
         actionContainer.innerHTML = `
             <button class="btn-bulk-price" onclick="setCategoryPrice()">💰 統一定價</button>
             <button onclick="renameCategory()">✏️ 修改名稱</button>
@@ -166,30 +179,18 @@
         `;
     }
 
-    // 🆕 統一定價邏輯 (一鍵批次修改)
     function setCategoryPrice() {
-        if (!currentCategory || currentCategory === '總覽') return;
-        
-        // 彈出對話框詢問統一金額
-        const priceInput = prompt(`請輸入「${currentCategory}」所有品項的統一單價：\n(輸入後將瞬間覆蓋目前該分類下所有商品的單價喔！)`);
-        
-        // 如果使用者有輸入東西，且不是按取消
+        if (!currentCategory || currentCategory === '總覽' || currentCategory === '歷史紀錄') return;
+        const priceInput = prompt(`請輸入「${currentCategory}」所有品項的統一單價：`);
         if (priceInput !== null && priceInput.trim() !== "") {
-            const newPrice = parseInt(priceInput) || 0; // 強制轉為數字，亂打就當 0 元
-            
-            // 跑迴圈，把這個分類下「所有商品」的 price 屬性都改成剛剛輸入的數字
-            appData[currentCategory].forEach(item => {
-                item.price = newPrice;
-            });
-            
-            saveData(); // 存檔
-            renderCards(); // 畫面重整，讓價格瞬間更新
-            alert(`🎉 成功將「${currentCategory}」的所有商品單價設定為 $ ${newPrice}！`);
+            const newPrice = parseInt(priceInput) || 0; 
+            appData[currentCategory].forEach(item => { item.price = newPrice; });
+            saveData(); renderCards(); alert(`🎉 成功設定為 $ ${newPrice}！`);
         }
     }
 
     function renameCategory() {
-        if (!currentCategory || currentCategory === '總覽') return; 
+        if (!currentCategory || currentCategory === '總覽' || currentCategory === '歷史紀錄') return; 
         const newCatName = prompt("請輸入新的分類名稱：", currentCategory);
         if (newCatName && newCatName.trim() !== "" && newCatName !== currentCategory) {
             if (appData[newCatName]) return alert("這個分類名稱已經存在囉！");
@@ -199,7 +200,7 @@
     }
 
     function deleteCategory() {
-        if (!currentCategory || currentCategory === '總覽') return; 
+        if (!currentCategory || currentCategory === '總覽' || currentCategory === '歷史紀錄') return; 
         if (confirm(`⚠️ 確定要刪除「${currentCategory}」這個分類嗎？\n\n注意：裡面的所有商品都會一起消失，無法復原喔！`)) {
             delete appData[currentCategory]; saveData(); switchCategory('總覽'); 
         }
@@ -211,6 +212,8 @@
         listContainer.innerHTML = '';
 
         if (currentCategory === '總覽') { renderOverview(); return; }
+        // 🆕 如果目前選擇的是歷史紀錄，就呼叫專屬的歷史戰績畫面
+        if (currentCategory === '歷史紀錄') { renderHistory(); return; }
 
         if (!appData[currentCategory] || appData[currentCategory].length === 0) {
             listContainer.innerHTML = '<div class="empty-msg">這裡目前沒有商品喔！點擊下方「新增品項」來建立吧。</div>';
@@ -326,9 +329,7 @@
     // --- 總覽畫面 ---
     function renderOverview() {
         const listContainer = document.getElementById('inventoryList');
-        
-        let totalRevenue = 0; 
-        let html = '';
+        let totalRevenue = 0; let html = '';
 
         for (let cat in appData) {
             appData[cat].forEach(item => {
@@ -355,12 +356,10 @@
                 if (realStock <= 0) outOfStockCount++; 
             });
 
-            let statusHtml = '';
-            let borderStyle = 'border-left: 5px solid #4CAF50;'; 
+            let statusHtml = ''; let borderStyle = 'border-left: 5px solid #4CAF50;'; 
 
             if (totalItems === 0) {
-                statusHtml = '<span style="color: #999; font-size: 14px;">沒有商品</span>';
-                borderStyle = 'border-left: 5px solid #ccc;';
+                statusHtml = '<span style="color: #999; font-size: 14px;">沒有商品</span>'; borderStyle = 'border-left: 5px solid #ccc;';
             } else if (outOfStockCount > 0) {
                 statusHtml = `<span style="color: #d32f2f; font-weight: bold; font-size: 14px;">⚠️ ${outOfStockCount} 件缺貨需補貨</span>`;
                 borderStyle = 'border-left: 5px solid #f44336; background-color: #ffebee;';
@@ -378,8 +377,69 @@
                 </div>
             `;
         }
+        listContainer.innerHTML = html;
+    }
+
+    // 🆕 歷史戰績畫面繪製
+    function renderHistory() {
+        const listContainer = document.getElementById('inventoryList');
+        
+        if (historyData.length === 0) {
+            listContainer.innerHTML = '<div class="empty-msg">這裡目前空空的喔！<br><br>當你點擊下方的「📅 月底結算」後，<br>系統就會自動把當月的營收戰績封存到這裡。</div>';
+            return;
+        }
+
+        let html = '<div style="margin-bottom: 15px; color: #777; font-size: 14px; text-align: center;">🏆 過去辛苦累積的戰果都在這</div>';
+        
+        // 把歷史紀錄陣列反轉，讓最新的紀錄排在最上面
+        let sortedHistory = [...historyData].sort((a, b) => b.id - a.id);
+
+        sortedHistory.forEach(record => {
+            // 整理這筆紀錄中，各分類賺了多少錢
+            let breakdownHtml = '';
+            for(let cat in record.breakdown) {
+                if(record.breakdown[cat] > 0) { // 只顯示有賺錢的分類
+                    breakdownHtml += `
+                        <div style="display:flex; justify-content:space-between; font-size:14px; color:#555; margin-top:8px;">
+                            <span>📁 ${cat}</span>
+                            <span style="font-weight:bold;">$ ${record.breakdown[cat].toLocaleString()}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            // 如果全部都沒賣出，給個提示
+            if (breakdownHtml === '') {
+                breakdownHtml = '<div style="font-size:13px; color:#999; margin-top:5px;">該期無營收資料</div>';
+            }
+
+            // 畫出這張歷史紀錄卡片
+            html += `
+                <div class="item-card" style="border-left: 5px solid #FFD700;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #eee; padding-bottom: 10px; margin-bottom: 10px;">
+                        <span style="font-size: 18px; font-weight: bold; color: #333;">📅 ${record.title}</span>
+                        <button class="del-btn" style="background:#ccc; color:#fff;" onclick="deleteHistory(${record.id})">刪除</button>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #e65100; text-align: right; margin-bottom: 15px;">
+                        總營收: $ ${record.total.toLocaleString()}
+                    </div>
+                    <div style="background: #f9f9f9; padding: 12px; border-radius: 8px;">
+                        <div style="font-size:12px; font-weight:bold; color:#999; border-bottom:1px solid #ddd; padding-bottom:5px;">各分類營收貢獻：</div>
+                        ${breakdownHtml}
+                    </div>
+                </div>
+            `;
+        });
 
         listContainer.innerHTML = html;
+    }
+
+    // 刪除某筆歷史紀錄
+    function deleteHistory(id) {
+        if(confirm("確定要刪除這筆歷史紀錄嗎？刪掉就找不回來囉！")) {
+            historyData = historyData.filter(h => h.id !== id);
+            saveHistory(); renderCards();
+        }
     }
 
     function updateItem(index, field, value) {
@@ -396,16 +456,12 @@
     }
 
     function addNewItem() {
-        if (currentCategory === '總覽') {
-            alert("請先在上方點選一個分類，才能新增商品喔！"); return;
+        if (currentCategory === '總覽' || currentCategory === '歷史紀錄') {
+            alert("請先在上方點選一個實際的分類，才能新增商品喔！"); return;
         }
         
-        // 新增商品時，先抓這個分類裡第一項商品的單價來當預設值（如果有的話），沒有就預設 0
         let defaultPrice = 0;
-        if (appData[currentCategory].length > 0) {
-            defaultPrice = parseInt(appData[currentCategory][0].price) || 0;
-        }
-
+        if (appData[currentCategory].length > 0) { defaultPrice = parseInt(appData[currentCategory][0].price) || 0; }
         appData[currentCategory].unshift({ id: Date.now(), name: "", initial: 0, sell: 0, restock: 0, price: defaultPrice });
         saveData(); renderCards(); window.scrollTo(0, 0); 
     }
@@ -417,8 +473,44 @@
         }
     }
 
+    // 🆕 升級版月底結算：自動封存戰績！
     function monthlyReset() {
-        if (confirm("⚠️ 確定要進行月底結算嗎？\n\n1. 實際庫存會變成下個月的期初庫存\n2. 賣出與進貨將歸零\n3. 單價會保留不會歸零\n\n這樣做會讓本月的營收也歸零重新計算喔！")) {
+        // 1. 先結算這個月的總營收，跟各分類的小計
+        let totalRevenue = 0;
+        let breakdown = {};
+        
+        for (let cat in appData) {
+            let catRevenue = 0;
+            appData[cat].forEach(item => {
+                const sellCount = parseInt(item.sell) || 0;
+                const price = parseInt(item.price) || 0;
+                catRevenue += (sellCount * price);
+            });
+            breakdown[cat] = catRevenue; // 記錄這個分類賺多少
+            totalRevenue += catRevenue;  // 加到總營收裡
+        }
+
+        // 2. 跳出詳細的確認視窗
+        if (confirm(`⚠️ 確定要進行月底結算嗎？\n\n結算後系統會：\n1. 將本月總營收 $ ${totalRevenue.toLocaleString()} 封存到歷史紀錄\n2. 實際庫存結轉為下個月的期初\n3. 賣出與進貨數量歸零\n(商品單價會為您保留)`)) {
+            
+            // 3. 請老闆幫這次的結算命名 (預設帶入今天的年月)
+            let date = new Date();
+            let defaultName = `${date.getFullYear()}年${date.getMonth() + 1}月結算`;
+            let recordName = prompt("請為這次的戰績紀錄命名：", defaultName);
+            
+            if (recordName === null) return; // 老闆按取消就中止
+            if (recordName.trim() === "") recordName = defaultName;
+
+            // 4. 正式寫入歷史資料庫
+            historyData.push({
+                id: Date.now(),
+                title: recordName,
+                total: totalRevenue,
+                breakdown: breakdown
+            });
+            saveHistory();
+
+            // 5. 執行原本的歸零動作
             for (let cat in appData) {
                 appData[cat].forEach(item => {
                     const realStock = (parseInt(item.initial) || 0) - (parseInt(item.sell) || 0) + (parseInt(item.restock) || 0);
@@ -427,18 +519,28 @@
                     item.restock = 0;
                 });
             }
-            saveData(); renderCards(); alert("🎉 結算完成！準備迎接新的一月！"); 
+            saveData(); 
+            
+            // 6. 結算完自動跳轉到「歷史紀錄」畫面，讓老闆欣賞戰績
+            switchCategory('歷史紀錄'); 
+            alert("🎉 結算完成！您的戰績已完美封存！"); 
         }
     }
 
-    // --- 備份與還原功能 ---
+    // --- 🆕 備份與還原功能大升級 ---
     function exportData() {
-        const dataStr = JSON.stringify(appData, null, 2);
+        // 現在匯出時，會把 inventory(庫存) 跟 history(歷史) 包在一起匯出 (第二代檔案格式)
+        const backupData = {
+            version: 2,
+            inventory: appData,
+            history: historyData
+        };
+        const dataStr = JSON.stringify(backupData, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = "inventory_backup.json"; 
+        link.download = "inventory_backup_v2.json"; 
         link.click();
     }
 
@@ -451,7 +553,22 @@
             try {
                 const importedData = JSON.parse(e.target.result);
                 if (confirm("⚠️ 警告：匯入備份將會覆蓋掉目前所有的資料喔！確定要匯入嗎？")) {
-                    appData = importedData; saveData(); switchCategory('總覽'); alert("🎉 備份資料匯入成功！");
+                    
+                    // 智慧辨識檔案格式
+                    if (importedData.version === 2) {
+                        // 如果是新版包含歷史的備份檔
+                        appData = importedData.inventory || {};
+                        historyData = importedData.history || [];
+                    } else {
+                        // ⭐️ 完美相容：如果老闆拿剛剛匯出的第一代舊備份來匯入
+                        appData = importedData;
+                        historyData = []; // 舊版沒有歷史紀錄，所以清空
+                    }
+                    
+                    saveData(); 
+                    saveHistory(); // 存檔
+                    switchCategory('總覽'); 
+                    alert("🎉 備份資料匯入成功！");
                 }
             } catch (error) { alert("❌ 匯入失敗！這似乎不是正確的備份檔案格式。"); }
         };
