@@ -1,14 +1,17 @@
-<!DOCTYPE html> <html lang="zh-TW"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📱 專業版庫存盤點 App</title> <style> /* ================= CSS 樣式美化區塊 ================= */
-        
-        /* 基礎與 App 介面設定 */
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📱 專業版庫存盤點 App</title>
+    
+    <style> /* ================= CSS 樣式美化區塊 ================= */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
             margin: 0; padding: 0; background-color: #f4f7f6; padding-bottom: 80px; 
-            scroll-behavior: smooth; /* 🆕 讓網頁滑動時有平滑的動畫效果 */
+            scroll-behavior: smooth; 
         }
         
-        /* 頂部標題列的設計 */
         .header { 
             background-color: #3f51b5; color: white; padding: 15px; 
             text-align: center; font-size: 18px; font-weight: bold; 
@@ -16,106 +19,58 @@
             display: flex; justify-content: space-between; align-items: center; 
         }
         
-        /* 分類導覽列 (可左右滑動的分類標籤) */
-        .category-nav { 
-            display: flex; overflow-x: auto; background: white; 
-            padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); white-space: nowrap; 
-        }
-        
-        /* 單一個分類按鈕的設計 */
-        .category-btn { 
-            padding: 8px 15px; background: #eee; border: none; 
-            border-radius: 20px; margin-right: 10px; font-size: 14px; cursor: pointer; 
-        }
-        
-        /* 當某個分類被「選中」時的樣式變化 */
+        .category-nav { display: flex; overflow-x: auto; background: white; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); white-space: nowrap; }
+        .category-btn { padding: 8px 15px; background: #eee; border: none; border-radius: 20px; margin-right: 10px; font-size: 14px; cursor: pointer; }
         .category-btn.active { background: #3f51b5; color: white; }
 
-        /* 分類管理操作區塊 (修改/刪除分類) */
-        .category-actions {
-            display: flex; justify-content: flex-end; padding: 10px 15px 0 15px; 
-        }
-
-        .category-actions button {
-            background: none; border: 1px solid #ccc; padding: 5px 10px; 
-            border-radius: 5px; margin-left: 10px; font-size: 13px; color: #555; cursor: pointer; 
-        }
-
+        /* 分類管理操作區塊：稍微調整讓三個按鈕放得下，且可換行 */
+        .category-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; padding: 10px 15px 0 15px; gap: 8px; }
+        .category-actions button { background: none; border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; font-size: 13px; color: #555; cursor: pointer; }
         .category-actions button:hover { background: #eee; }
         
-        /* 內容區與卡片設計 */
+        /* 統一定價按鈕專屬樣式（紅色醒目） */
+        .btn-bulk-price { color: #d32f2f !important; border-color: #ffcdd2 !important; background-color: #ffebee !important; font-weight: bold; }
+        .btn-bulk-price:active { transform: scale(0.95); }
+
         .content { padding: 15px; }
         
-        /* 🆕 分類內部的頂部迷你總覽區塊 */
-        .mini-dashboard {
-            background: white; border-radius: 10px; padding: 15px;
-            margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border-top: 4px solid #3f51b5; /* 加上藍色頂部邊框增加質感 */
-        }
-
-        /* 🆕 迷你總覽裡面的「狀態膠囊標籤」 */
-        .status-chip {
-            display: inline-block; padding: 6px 12px; margin: 4px 4px 4px 0;
-            border-radius: 20px; font-size: 13px; font-weight: bold;
-            cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        
-        .status-chip:active { transform: scale(0.95); } /* 點擊時會稍微縮小 */
-
-        /* 缺貨標籤 (紅) */
+        .mini-dashboard { background: white; border-radius: 10px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 4px solid #3f51b5; }
+        .status-chip { display: inline-block; padding: 6px 12px; margin: 4px 4px 4px 0; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .status-chip:active { transform: scale(0.95); } 
         .chip-danger { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        /* 充足標籤 (綠) */
         .chip-safe { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
 
-        /* 單一張卡片的外觀設計 */
-        .item-card { 
-            background: white; border-radius: 10px; padding: 15px; 
-            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-            transition: box-shadow 0.3s ease; /* 🆕 為了跳轉時的閃爍特效做準備 */
-        }
-        
-        /* 總覽畫面中，分類按鈕卡片的點擊特效 */
+        .item-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: box-shadow 0.3s ease; }
         .overview-card:active { background-color: #f0f0f0; }
 
-        /* 卡片上半部 (包含商品名稱輸入框和刪除按鈕) */
-        .item-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; 
-        }
-        
-        /* 商品名稱輸入框的美化 */
-        .item-header input[type="text"] { 
-            font-size: 16px; font-weight: bold; border: 1px solid #ccc; 
-            padding: 5px; border-radius: 5px; width: 60%; 
-        }
-        
-        /* 刪除按鈕的設計 */
-        .del-btn { 
-            background-color: #ff4d4f; color: white; border: none; 
-            padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; 
-        }
+        .item-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+        .item-header input[type="text"] { font-size: 16px; font-weight: bold; border: 1px solid #ccc; padding: 5px; border-radius: 5px; width: 60%; }
+        .del-btn { background-color: #ff4d4f; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; }
 
-        /* 數字操作區：每一列的排版 */
         .row-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .row-group label { font-size: 14px; color: #555; width: 30%; }
+        .row-group label { font-size: 14px; color: #555; width: 30%; font-weight: bold; }
         
-        /* 包含 -按鈕、數字輸入框、+按鈕的群組 */
         .number-control { display: flex; align-items: center; width: 60%; justify-content: space-between; }
         .number-control button { width: 30px; height: 30px; font-size: 18px; background: #e0e0e0; border: none; border-radius: 5px; cursor: pointer; }
         .number-control input { width: 40px; text-align: center; font-size: 16px; border: 1px solid #ccc; padding: 5px; border-radius: 5px; }
+        
+        .price-input { width: 80px; text-align: right; font-size: 16px; border: 1px solid #ccc; padding: 5px; border-radius: 5px; color: #d32f2f; font-weight: bold; }
 
-        /* 最下方的「實際庫存結算」區塊設計 */
         .result-group { display: flex; justify-content: space-between; align-items: center; background: #e8eaf6; padding: 10px; border-radius: 5px; margin-top: 10px; }
         .result-group span { font-size: 14px; color: #3f51b5; font-weight: bold; }
         .real-stock { font-size: 20px !important; color: #d32f2f !important; }
 
-        /* 底部操作列 (新增與結算按鈕) */
+        .revenue-group { display: flex; justify-content: space-between; align-items: center; background: #fff8e1; padding: 10px; border-radius: 5px; margin-top: 5px; border: 1px solid #ffecb3; }
+        .revenue-group span { font-size: 14px; color: #f57f17; font-weight: bold; }
+        .item-revenue { font-size: 18px !important; color: #e65100 !important; }
+
+        .total-revenue-card { background: linear-gradient(135deg, #FFD700 0%, #F57F17 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(245, 127, 23, 0.3); text-align: center; }
+
         .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
         .bottom-bar button { flex: 1; padding: 15px; font-size: 16px; border: none; font-weight: bold; cursor: pointer; border-right: 1px solid #eee; }
         .btn-add { background-color: #2196F3; color: white; }
         .btn-reset { background-color: #ff9800; color: white; }
         
-        /* 提示文字美化 */
         .empty-msg { text-align: center; color: #999; margin-top: 30px; }
     </style>
 </head>
@@ -133,9 +88,7 @@
     <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importData(event)">
 
     <div class="category-nav" id="categoryNav"></div>
-
     <div class="category-actions" id="categoryActions"></div>
-
     <div class="content" id="inventoryList"></div>
 
     <div class="bottom-bar">
@@ -148,34 +101,23 @@
     let appData = {}; 
     let currentCategory = "總覽"; 
 
-    // 網頁載入完成時讀取資料
-    window.onload = function() {
-        loadData();
-    };
+    window.onload = function() { loadData(); };
 
-    // --- 資料存取功能 ---
     function loadData() {
         const savedData = localStorage.getItem('myInventoryData');
-        
         if (savedData) {
             appData = JSON.parse(savedData);
         } else {
             appData = {
-                "鑰匙圈": [{ id: Date.now(), name: "胸膛愛❤️", initial: 3, sell: 1, restock: 0 }],
+                "鑰匙圈": [{ id: Date.now(), name: "胸膛愛❤️", initial: 3, sell: 1, restock: 0, price: 150 }],
                 "明信片": [] 
             };
         }
-        
-        renderCategories();
-        renderCategoryActions();
-        renderCards();
+        renderCategories(); renderCategoryActions(); renderCards();
     }
 
-    function saveData() {
-        localStorage.setItem('myInventoryData', JSON.stringify(appData));
-    }
+    function saveData() { localStorage.setItem('myInventoryData', JSON.stringify(appData)); }
 
-    // --- 分類操作與切換功能 ---
     function renderCategories() {
         const nav = document.getElementById('categoryNav');
         nav.innerHTML = ''; 
@@ -198,60 +140,68 @@
 
     function switchCategory(catName) {
         currentCategory = catName; 
-        renderCategories(); 
-        renderCategoryActions(); 
-        renderCards(); 
-        window.scrollTo(0, 0); 
+        renderCategories(); renderCategoryActions(); renderCards(); window.scrollTo(0, 0); 
     }
 
     function addCategory() {
         const newCat = prompt("請輸入新分類名稱（例如：地墊、無框畫）：");
         if (newCat && newCat.trim() !== "") {
             if (!appData[newCat]) {
-                appData[newCat] = []; 
-                saveData(); 
-                switchCategory(newCat); 
-            } else {
-                alert("這個分類已經存在囉！");
-            }
+                appData[newCat] = []; saveData(); switchCategory(newCat); 
+            } else { alert("這個分類已經存在囉！"); }
         }
     }
 
+    // --- 繪製分類管理區塊 ---
     function renderCategoryActions() {
         const actionContainer = document.getElementById('categoryActions');
-        if (!currentCategory || currentCategory === '總覽') {
-            actionContainer.style.display = 'none';
-            return;
-        }
-
+        if (!currentCategory || currentCategory === '總覽') { actionContainer.style.display = 'none'; return; }
+        
         actionContainer.style.display = 'flex';
+        // 🆕 新增了一顆紅色的「💰 統一定價」按鈕
         actionContainer.innerHTML = `
+            <button class="btn-bulk-price" onclick="setCategoryPrice()">💰 統一定價</button>
             <button onclick="renameCategory()">✏️ 修改名稱</button>
             <button onclick="deleteCategory()">❌ 刪除分類</button>
         `;
     }
 
+    // 🆕 統一定價邏輯 (一鍵批次修改)
+    function setCategoryPrice() {
+        if (!currentCategory || currentCategory === '總覽') return;
+        
+        // 彈出對話框詢問統一金額
+        const priceInput = prompt(`請輸入「${currentCategory}」所有品項的統一單價：\n(輸入後將瞬間覆蓋目前該分類下所有商品的單價喔！)`);
+        
+        // 如果使用者有輸入東西，且不是按取消
+        if (priceInput !== null && priceInput.trim() !== "") {
+            const newPrice = parseInt(priceInput) || 0; // 強制轉為數字，亂打就當 0 元
+            
+            // 跑迴圈，把這個分類下「所有商品」的 price 屬性都改成剛剛輸入的數字
+            appData[currentCategory].forEach(item => {
+                item.price = newPrice;
+            });
+            
+            saveData(); // 存檔
+            renderCards(); // 畫面重整，讓價格瞬間更新
+            alert(`🎉 成功將「${currentCategory}」的所有商品單價設定為 $ ${newPrice}！`);
+        }
+    }
+
     function renameCategory() {
         if (!currentCategory || currentCategory === '總覽') return; 
         const newCatName = prompt("請輸入新的分類名稱：", currentCategory);
-        
         if (newCatName && newCatName.trim() !== "" && newCatName !== currentCategory) {
             if (appData[newCatName]) return alert("這個分類名稱已經存在囉！");
-            
-            appData[newCatName] = appData[currentCategory];
-            delete appData[currentCategory];
-            
-            saveData(); 
-            switchCategory(newCatName); 
+            appData[newCatName] = appData[currentCategory]; delete appData[currentCategory];
+            saveData(); switchCategory(newCatName); 
         }
     }
 
     function deleteCategory() {
         if (!currentCategory || currentCategory === '總覽') return; 
         if (confirm(`⚠️ 確定要刪除「${currentCategory}」這個分類嗎？\n\n注意：裡面的所有商品都會一起消失，無法復原喔！`)) {
-            delete appData[currentCategory];
-            saveData(); 
-            switchCategory('總覽'); 
+            delete appData[currentCategory]; saveData(); switchCategory('總覽'); 
         }
     }
 
@@ -260,10 +210,7 @@
         const listContainer = document.getElementById('inventoryList');
         listContainer.innerHTML = '';
 
-        if (currentCategory === '總覽') {
-            renderOverview();
-            return;
-        }
+        if (currentCategory === '總覽') { renderOverview(); return; }
 
         if (!appData[currentCategory] || appData[currentCategory].length === 0) {
             listContainer.innerHTML = '<div class="empty-msg">這裡目前沒有商品喔！點擊下方「新增品項」來建立吧。</div>';
@@ -272,66 +219,62 @@
 
         const items = appData[currentCategory];
 
-        // 1. 預先處理資料：打包商品、記錄原本位置、算出實際庫存
         let itemsWithIndex = items.map((item, index) => {
             const realStock = (parseInt(item.initial) || 0) - (parseInt(item.sell) || 0) + (parseInt(item.restock) || 0);
             return { item: item, originalIndex: index, realStock: realStock };
         });
 
-        // 2. 進行智慧排序：缺貨的排在最前面
         itemsWithIndex.sort((a, b) => {
             if (a.realStock <= 0 && b.realStock > 0) return -1; 
             if (a.realStock > 0 && b.realStock <= 0) return 1;  
             return 0; 
         });
 
-        // ==========================================
-        // 🆕 建立「分類專屬的迷你總覽看板」
-        // ==========================================
         const miniDashboard = document.createElement('div');
         miniDashboard.className = 'mini-dashboard';
-        
         let miniHtml = `<div style="font-size: 14px; color: #555; margin-bottom: 10px; font-weight: bold;">🎯 本類別品項導覽 (點擊跳轉)</div>`;
         
-        // 把所有的商品變成可以點擊的「膠囊標籤」
         itemsWithIndex.forEach((data) => {
             const itemName = data.item.name || '未命名';
             const stock = data.realStock;
-            const targetId = data.originalIndex; // 跳轉目標就是它原本的 index
-            
+            const targetId = data.originalIndex; 
             if (stock <= 0) {
-                // 缺貨膠囊 (紅色)
                 miniHtml += `<div class="status-chip chip-danger" onclick="scrollToItem(${targetId})">⚠️ ${itemName}: ${stock}</div>`;
             } else {
-                // 安全膠囊 (綠色)
                 miniHtml += `<div class="status-chip chip-safe" onclick="scrollToItem(${targetId})">✅ ${itemName}: ${stock}</div>`;
             }
         });
         miniDashboard.innerHTML = miniHtml;
         listContainer.appendChild(miniDashboard);
-        // ==========================================
 
-        // 3. 按照排序把詳細商品卡片畫出來
         itemsWithIndex.forEach((data) => {
             const item = data.item;
             const idx = data.originalIndex; 
             const realStock = data.realStock;
+            
+            const price = parseInt(item.price) || 0;
+            const itemRevenue = (parseInt(item.sell) || 0) * price;
 
             const card = document.createElement('div');
             card.className = 'item-card';
-            
-            // 🆕 賦予這張卡片一個專屬的 ID，方便等一下被「跳轉定位」找到
             card.id = `item-card-${idx}`;
             
-            if (realStock <= 0) {
-                card.style.borderLeft = "5px solid #f44336";
-            }
+            if (realStock <= 0) card.style.borderLeft = "5px solid #f44336";
 
             card.innerHTML = `
                 <div class="item-header">
                     <input type="text" value="${item.name}" placeholder="輸入商品名稱" onchange="updateItem(${idx}, 'name', this.value)">
                     <button class="del-btn" onclick="deleteItem(${idx})">刪除</button>
                 </div>
+                
+                <div class="row-group" style="border-bottom: 1px dashed #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                    <label style="color: #d32f2f;">💰 商品單價</label>
+                    <div style="display: flex; align-items: center;">
+                        <span style="margin-right: 5px; color: #777; font-weight: bold;">$</span>
+                        <input type="number" class="price-input" value="${price}" onchange="updateItem(${idx}, 'price', this.value)">
+                    </div>
+                </div>
+
                 <div class="row-group">
                     <label>期初庫存</label>
                     <div class="number-control">
@@ -356,29 +299,27 @@
                         <button onclick="changeNumber(${idx}, 'restock', 1)">+</button>
                     </div>
                 </div>
+                
                 <div class="result-group">
-                    <span>⚡ 實際庫存結算</span>
+                    <span>⚡ 實際庫存</span>
                     <span class="real-stock">${realStock}</span>
+                </div>
+                
+                <div class="revenue-group">
+                    <span>💵 本品項營收小計</span>
+                    <span class="item-revenue">$ ${itemRevenue.toLocaleString()}</span>
                 </div>
             `;
             listContainer.appendChild(card);
         });
     }
 
-    // 🆕 新增：點擊膠囊標籤後，自動滑動跳轉到指定卡片的函數
     function scrollToItem(targetIdx) {
         const targetCard = document.getElementById(`item-card-${targetIdx}`);
         if (targetCard) {
-            // 平滑地把畫面捲動到該卡片位置 (讓卡片停在畫面中間)
             targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // 加上紅色的閃爍光暈特效，提醒使用者是這張卡片
             targetCard.style.boxShadow = "0 0 15px rgba(244, 67, 54, 0.8)";
-            
-            // 1.5 秒後把閃爍特效移除，恢復原狀
-            setTimeout(() => {
-                targetCard.style.boxShadow = "0 2px 5px rgba(0,0,0,0.05)";
-            }, 1500);
+            setTimeout(() => { targetCard.style.boxShadow = "0 2px 5px rgba(0,0,0,0.05)"; }, 1500);
         }
     }
 
@@ -386,7 +327,24 @@
     function renderOverview() {
         const listContainer = document.getElementById('inventoryList');
         
-        let html = '<div style="margin-bottom: 15px; color: #777; font-size: 14px; text-align: center;">👇🏼 點擊下方分類卡片，進入盤點或查看詳情</div>';
+        let totalRevenue = 0; 
+        let html = '';
+
+        for (let cat in appData) {
+            appData[cat].forEach(item => {
+                const sellCount = parseInt(item.sell) || 0;
+                const price = parseInt(item.price) || 0;
+                totalRevenue += (sellCount * price); 
+            });
+        }
+
+        html += `
+            <div class="total-revenue-card">
+                <div style="font-size: 14px; opacity: 0.9;">💰 本月預估總收入</div>
+                <div style="font-size: 36px; font-weight: bold; margin-top: 5px;">$ ${totalRevenue.toLocaleString()}</div>
+            </div>
+            <div style="margin-bottom: 15px; color: #777; font-size: 14px; text-align: center;">👇🏼 點擊下方分類卡片，進入盤點或查看詳情</div>
+        `;
 
         for (let cat in appData) {
             let totalItems = appData[cat].length; 
@@ -394,9 +352,7 @@
 
             appData[cat].forEach(item => {
                 const realStock = (parseInt(item.initial) || 0) - (parseInt(item.sell) || 0) + (parseInt(item.restock) || 0);
-                if (realStock <= 0) {
-                    outOfStockCount++; 
-                }
+                if (realStock <= 0) outOfStockCount++; 
             });
 
             let statusHtml = '';
@@ -441,14 +397,17 @@
 
     function addNewItem() {
         if (currentCategory === '總覽') {
-            alert("請先在上方點選一個分類，才能新增商品喔！");
-            return;
+            alert("請先在上方點選一個分類，才能新增商品喔！"); return;
         }
         
-        appData[currentCategory].unshift({ id: Date.now(), name: "", initial: 0, sell: 0, restock: 0 });
-        saveData(); 
-        renderCards(); 
-        window.scrollTo(0, 0); 
+        // 新增商品時，先抓這個分類裡第一項商品的單價來當預設值（如果有的話），沒有就預設 0
+        let defaultPrice = 0;
+        if (appData[currentCategory].length > 0) {
+            defaultPrice = parseInt(appData[currentCategory][0].price) || 0;
+        }
+
+        appData[currentCategory].unshift({ id: Date.now(), name: "", initial: 0, sell: 0, restock: 0, price: defaultPrice });
+        saveData(); renderCards(); window.scrollTo(0, 0); 
     }
 
     function deleteItem(index) {
@@ -459,14 +418,16 @@
     }
 
     function monthlyReset() {
-        if (confirm("⚠️ 確定要進行月底結算嗎？\n\n系統會自動將目前的「實際庫存」變成下個月的「期初庫存」，並把賣出與進貨數量歸零喔！")) {
+        if (confirm("⚠️ 確定要進行月底結算嗎？\n\n1. 實際庫存會變成下個月的期初庫存\n2. 賣出與進貨將歸零\n3. 單價會保留不會歸零\n\n這樣做會讓本月的營收也歸零重新計算喔！")) {
             for (let cat in appData) {
                 appData[cat].forEach(item => {
                     const realStock = (parseInt(item.initial) || 0) - (parseInt(item.sell) || 0) + (parseInt(item.restock) || 0);
-                    item.initial = realStock; item.sell = 0; item.restock = 0;
+                    item.initial = realStock; 
+                    item.sell = 0; 
+                    item.restock = 0;
                 });
             }
-            saveData(); renderCards(); alert("🎉 結算完成！準備迎接新的一個月！"); 
+            saveData(); renderCards(); alert("🎉 結算完成！準備迎接新的一月！"); 
         }
     }
 
@@ -490,18 +451,14 @@
             try {
                 const importedData = JSON.parse(e.target.result);
                 if (confirm("⚠️ 警告：匯入備份將會覆蓋掉目前所有的資料喔！確定要匯入嗎？")) {
-                    appData = importedData; 
-                    saveData(); 
-                    switchCategory('總覽'); 
-                    alert("🎉 備份資料匯入成功！");
+                    appData = importedData; saveData(); switchCategory('總覽'); alert("🎉 備份資料匯入成功！");
                 }
-            } catch (error) {
-                alert("❌ 匯入失敗！這似乎不是正確的備份檔案格式。");
-            }
+            } catch (error) { alert("❌ 匯入失敗！這似乎不是正確的備份檔案格式。"); }
         };
         reader.readAsText(file);
         event.target.value = ""; 
     }
 
-</script> </body> 
+</script> 
+</body> 
 </html>
